@@ -1,0 +1,76 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: duckdb-ingress
+  namespace: duckdb-system
+  labels:
+    app: duckdb-server
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    kubernetes.io/ingress.class: "nginx"
+spec:
+  rules:
+  - host: duckdb.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-proxy
+            port:
+              number: 80
+  - host: duckdb-api.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: duckdb-server
+            port:
+              number: 8080
+---
+# HTTPS版本 (需要TLS证书)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: duckdb-ingress-tls
+  namespace: duckdb-system
+  labels:
+    app: duckdb-server
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - duckdb.example.com
+    - api.duckdb.example.com
+    secretName: duckdb-tls
+  rules:
+  - host: duckdb.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: nginx-proxy
+            port:
+              number: 80
+  - host: api.duckdb.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: duckdb-server
+            port:
+              number: 8080 

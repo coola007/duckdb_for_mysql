@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: duckdb-server
+  namespace: duckdb-system
+  labels:
+    app: duckdb-server
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+    prometheus.io/path: "/metrics"
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 8080
+    targetPort: http
+    protocol: TCP
+  - name: mysql
+    port: 3366
+    targetPort: mysql
+    protocol: TCP
+  selector:
+    app: duckdb-server
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: duckdb-headless
+  namespace: duckdb-system
+  labels:
+    app: duckdb-server
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+  - name: http
+    port: 8080
+    targetPort: http
+  - name: mysql
+    port: 3366
+    targetPort: mysql
+  selector:
+    app: duckdb-server
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-proxy
+  namespace: duckdb-system
+  labels:
+    app: nginx-proxy
+spec:
+  type: LoadBalancer
+  ports:
+  - name: http
+    port: 80
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: nginx-proxy
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: duckdb-mysql-nodeport
+  namespace: duckdb-system
+  labels:
+    app: duckdb-server
+    service-type: mysql
+spec:
+  type: NodePort
+  ports:
+  - name: mysql
+    port: 3366
+    targetPort: mysql
+    nodePort: 30366
+    protocol: TCP
+  selector:
+    app: duckdb-server 

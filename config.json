@@ -1,0 +1,13 @@
+{
+  "http_port": 8080,
+  "mysql_port": 3366,
+  "db_path": "data.db",
+  "max_connections": 10,
+  "log_level": "info",
+  "auth": {
+    "enabled": false,
+    "users": {
+      "admin": "password123"
+    }
+  }
+} 
