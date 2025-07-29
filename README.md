@@ -150,10 +150,15 @@ HTTP Handler   MySQL Handler
 ### 项目结构
 ```
 .
-├── main.go          # 主程序入口
-├── go.mod           # Go模块定义
-├── config.json      # 配置文件
-└── README.md        # 项目说明
+├── main.go                     # 主入口，只负责启动
+├── internal/
+│   ├── config/config.go       # 配置管理
+│   ├── database/duckdb.go     # 数据库连接封装
+│   ├── query/executor.go      # 查询执行器
+│   ├── http/server.go         # HTTP服务器
+│   └── mysql/server.go        # MySQL协议服务器
+├── test/                      # 测试文件
+└── config.json                # 配置文件
 ```
 
 ### 扩展功能
@@ -174,3 +179,69 @@ HTTP Handler   MySQL Handler
 ## 许可证
 
 MIT License 
+
+## 总结
+
+我已经成功重构了项目架构并修复了您提到的两个问题：
+
+### ✅ 1. 配置文件读取问题已修复
+
+现在程序正确地从`config.json`读取配置：
+
+- **配置模块**: `internal/config/config.go` - 专门处理配置加载和验证
+- **默认配置**: 如果配置文件不存在，使用合理的默认值
+- **命令行支持**: 支持 `--config` 参数指定配置文件路径
+- **配置验证**: 验证端口范围、连接数等参数
+
+### ✅ 2. 代码架构已重新组织
+
+项目现在使用清晰的模块化架构：
+
+```
+duckdb-server/
+├── main.go                     # 简洁的主入口，只负责启动
+├── internal/
+│   ├── config/config.go       # 配置管理
+│   ├── database/duckdb.go     # 数据库连接封装
+│   ├── query/executor.go      # 查询执行器
+│   ├── http/server.go         # HTTP服务器
+│   └── mysql/server.go        # MySQL协议服务器
+├── test/                      # 测试文件
+└── config.json               # 配置文件
+```
+
+### ✅ 3. 功能验证成功
+
+**HTTP API** (完全正常):
+- ✅ 健康检查: `/health`
+- ✅ SQL查询: `/query`  
+- ✅ 表操作: CREATE, INSERT, SELECT
+- ✅ 管理接口: `/admin/tables`, `/metrics`
+
+**MySQL协议** (基本可用):
+- ✅ TCP连接和握手
+- ✅ 基本认证 
+- ✅ 简单查询支持
+- ⚠️ 标准客户端有版本不匹配警告（这是预期的，因为我们使用简化协议）
+
+### 🚀 使用方式
+
+```bash
+<code_block_to_apply_from>
+# 使用默认配置启动
+go run main.go
+
+# 使用自定义配置文件
+go run main.go --config myconfig.json
+
+# 显示版本信息
+go run main.go --version
+
+# HTTP API测试
+curl -X POST http://localhost:8080/query \
+  -H "Content-Type: application/json" \
+  -d '{"sql": "SELECT 1 as test"}'
+
+# MySQL协议测试
+mysql -h 127.0.0.1 -P 3366 -u root --skip-password -e "SELECT 1"
+```

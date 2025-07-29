@@ -34,7 +34,7 @@ def test_mysql_handshake():
         # 连接到服务器
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(10)
-        sock.connect(('localhost', 3366))
+        sock.connect(('localhost', 33660))
         print("✓ TCP连接建立成功")
         
         # 接收握手包
@@ -107,7 +107,7 @@ def test_query_execution():
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.settimeout(10)
-        sock.connect(('localhost', 3366))
+        sock.connect(('localhost', 33660))
         
         # 跳过握手，直接发送查询
         handshake_data = sock.recv(1024)
@@ -155,7 +155,7 @@ def test_multiple_connections():
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(5)
-            sock.connect(('localhost', 3366))
+            sock.connect(('localhost', 33660))
             connections.append(sock)
             success_count += 1
             print(f"✓ 连接 {i+1}/3 建立成功")
