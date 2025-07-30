@@ -289,6 +289,9 @@ func (s *Server) handleMySQLCompatibilityCommand(conn net.Conn, query string, se
 	// 转换为小写以便匹配
 	lowerQuery := strings.ToLower(strings.TrimSpace(query))
 
+	// 添加调试日志
+	// log.Printf("🔍 检查兼容性命令: [%s]", query)
+
 	// MySQL客户端连接时常用的设置命令
 	compatibilityCommands := []string{
 		"set names utf8mb4",
@@ -302,16 +305,38 @@ func (s *Server) handleMySQLCompatibilityCommand(conn net.Conn, query string, se
 		"set sql_mode=",
 		"set autocommit=1",
 		"set autocommit=0",
+		"set autocommit = 1",
+		"set autocommit = 0",
+		"set @@autocommit=1",
+		"set @@autocommit=0",
+		"set @@autocommit = 1",
+		"set @@autocommit = 0",
+		"set @@session.autocommit=1",
+		"set @@session.autocommit=0",
+		"set @@session.autocommit = 1",
+		"set @@session.autocommit = 0",
+		"set session autocommit=1",
+		"set session autocommit=0",
+		"set session autocommit = 1",
+		"set session autocommit = 0",
+		"set global autocommit=1",
+		"set global autocommit=0",
+		"set global autocommit = 1",
+		"set global autocommit = 0",
 		"set session transaction isolation level read committed",
 		"set session transaction isolation level repeatable read",
 		"show warnings",
 		"show variables like 'character_set%'",
 		"show variables like 'collation%'",
+		"show variables like 'autocommit%'",
+		"show variables like '%autocommit%'",
 		"show collation",
 		"show charset",
 		"select @@version_comment",
 		"select @@sql_mode",
 		"select @@autocommit",
+		"select @@session.autocommit",
+		"select @@global.autocommit",
 		"select @@character_set_server",
 		"select @@collation_server",
 		"select connection_id()",
@@ -336,6 +361,14 @@ func (s *Server) handleMySQLCompatibilityCommand(conn net.Conn, query string, se
 			}
 			if strings.HasPrefix(lowerQuery, "select @@autocommit") {
 				s.sendSimpleResult(conn, "@@autocommit", "1", sequenceID)
+				return true
+			}
+			if strings.HasPrefix(lowerQuery, "select @@session.autocommit") {
+				s.sendSimpleResult(conn, "@@session.autocommit", "1", sequenceID)
+				return true
+			}
+			if strings.HasPrefix(lowerQuery, "select @@global.autocommit") {
+				s.sendSimpleResult(conn, "@@global.autocommit", "1", sequenceID)
 				return true
 			}
 			if strings.HasPrefix(lowerQuery, "select @@character_set_server") {
@@ -388,6 +421,14 @@ func (s *Server) handleMySQLCompatibilityCommand(conn net.Conn, query string, se
 				s.sendResultSet(conn, columns, rows, sequenceID)
 				return true
 			}
+			if strings.HasPrefix(lowerQuery, "show variables like") && (strings.Contains(lowerQuery, "autocommit") || strings.Contains(lowerQuery, "%autocommit%")) {
+				columns := []string{"Variable_name", "Value"}
+				rows := []map[string]interface{}{
+					{"Variable_name": "autocommit", "Value": "ON"},
+				}
+				s.sendResultSet(conn, columns, rows, sequenceID)
+				return true
+			}
 			if strings.HasPrefix(lowerQuery, "show collation") {
 				columns := []string{"Collation", "Charset", "Id", "Default", "Compiled", "Sortlen"}
 				rows := []map[string]interface{}{
@@ -408,6 +449,42 @@ func (s *Server) handleMySQLCompatibilityCommand(conn net.Conn, query string, se
 			}
 
 			// 对于其他设置命令，直接返回OK
+			okPayload := s.buildOKPacket(0, 0)
+			s.sendPacket(conn, okPayload, sequenceID)
+			return true
+		}
+	}
+
+	// 额外的灵活匹配 - 用于处理各种格式的SET命令
+	if strings.HasPrefix(lowerQuery, "set ") {
+		// 匹配所有autocommit相关的SET命令
+		if strings.Contains(lowerQuery, "autocommit") {
+			log.Printf("处理AUTOCOMMIT设置命令: %s", query)
+			okPayload := s.buildOKPacket(0, 0)
+			s.sendPacket(conn, okPayload, sequenceID)
+			return true
+		}
+
+		// 匹配字符集相关的SET命令
+		if strings.Contains(lowerQuery, "character_set") || strings.Contains(lowerQuery, "charset") ||
+			strings.Contains(lowerQuery, "collation") || strings.Contains(lowerQuery, "names") {
+			log.Printf("处理字符集设置命令: %s", query)
+			okPayload := s.buildOKPacket(0, 0)
+			s.sendPacket(conn, okPayload, sequenceID)
+			return true
+		}
+
+		// 匹配SQL模式相关的SET命令
+		if strings.Contains(lowerQuery, "sql_mode") {
+			log.Printf("处理SQL模式设置命令: %s", query)
+			okPayload := s.buildOKPacket(0, 0)
+			s.sendPacket(conn, okPayload, sequenceID)
+			return true
+		}
+
+		// 匹配事务隔离级别
+		if strings.Contains(lowerQuery, "transaction") && strings.Contains(lowerQuery, "isolation") {
+			log.Printf("处理事务隔离级别设置命令: %s", query)
 			okPayload := s.buildOKPacket(0, 0)
 			s.sendPacket(conn, okPayload, sequenceID)
 			return true

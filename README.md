@@ -243,5 +243,7 @@ curl -X POST http://localhost:8080/query \
   -d '{"sql": "SELECT 1 as test"}'
 
 # MySQL协议测试
-mysql -h 127.0.0.1 -P 3366 -u root --skip-password -e "SELECT 1"
+mysql -h 127.0.0.1 -P 33660 -u root --skip-password -e "SELECT 1"
+
+mysql -h 127.0.0.1 -P 33660 -u test -e "SELECT 1 as test_num, 'Hello DuckDB' as message"
 ```

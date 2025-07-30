@@ -1,0 +1,10 @@
+{
+  "http_port": 8080,
+  "mysql_port": 33660,
+  "database_path": "/var/lib/duckdb/data.db",
+  "log_level": "info",
+  "max_connections": 100,
+  "read_timeout": 30,
+  "write_timeout": 30,
+  "idle_timeout": 300
+} 
