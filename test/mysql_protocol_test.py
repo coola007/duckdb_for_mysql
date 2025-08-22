@@ -332,6 +332,16 @@ class MySQLProtocolTester:
         except Exception as e:
             print_colored(f"❌ 发送Ping失败: {e}", Colors.RED)
             return False
+
+    def send_use_db(self, db_name: str) -> bool:
+        """发送 COM_INIT_DB 命令"""
+        try:
+            print_colored(f"🗄️  执行 USE {db_name}", Colors.BLUE)
+            payload = struct.pack('B', 0x02) + db_name.encode('utf-8')
+            return self.send_packet(payload, 0)
+        except Exception as e:
+            print_colored(f"❌ 发送 USE DB 失败: {e}", Colors.RED)
+            return False
     
     def close(self):
         """关闭连接"""
@@ -383,6 +393,15 @@ def test_mysql_protocol(host: str = "localhost", port: int = 33660):
                 print_colored("✅ Ping成功", Colors.GREEN)
             else:
                 print_colored("❌ Ping失败", Colors.RED)
+
+        # 4.5. Use DB 测试
+        print_colored("\n🗄️ 步骤 4.5: Use DB 测试", Colors.BOLD + Colors.PURPLE)
+        if tester.send_use_db("test_db"):
+            use_db_result = tester.read_packet()
+            if use_db_result and use_db_result[0] == 0x00:
+                print_colored("✅ Use DB成功", Colors.GREEN)
+            else:
+                print_colored("❌ Use DB失败", Colors.RED)
         
         # 5. 查询测试
         print_colored("\n📝 步骤 5: 查询测试", Colors.BOLD + Colors.PURPLE)
@@ -429,6 +448,7 @@ def test_mysql_protocol(host: str = "localhost", port: int = 33660):
             ("握手测试", "✅"),
             ("认证测试", "✅"),
             ("Ping测试", "✅"),
+            ("Use DB测试", "✅" if use_db_result and use_db_result[0] == 0x00 else "❌"),
             ("查询测试", "✅" if success_count == len(test_queries) else "⚠️"),
             ("并发测试", "✅" if concurrent_test_passed else "❌"),
             ("性能测试", "✅" if performance_test_passed else "⚠️"),

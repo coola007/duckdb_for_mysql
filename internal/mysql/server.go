@@ -220,6 +220,12 @@ func (s *Server) handleCommands(conn net.Conn) {
 			log.Printf("客户端发送退出命令")
 			return
 
+		case COM_INIT_DB:
+			dbName := string(packet.Payload[1:])
+			log.Printf("客户端尝试切换数据库 (USE %s)，已忽略", dbName)
+			okPayload := s.buildOKPacket(0, 0)
+			s.sendPacket(conn, okPayload, packet.SequenceID+1)
+
 		case COM_PING:
 			log.Printf("客户端发送Ping命令")
 			okPayload := []byte{0x00}
